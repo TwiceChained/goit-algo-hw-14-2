@@ -10,13 +10,11 @@ def execute_query(sql: str) -> list:
 
 sql = """
 SELECT 
-    s.student_name,
-    ROUND(AVG(g.grade_value), 2) AS average_grade
+    gr.group_name,
+    s.student_name
 FROM students AS s 
-JOIN grades AS g ON s.id = g.student_id
-GROUP BY s.id, s.student_name
-ORDER BY average_grade DESC
-LIMIT 5;
+JOIN groups AS gr ON s.group_id = gr.id
+WHERE gr.id = 2;
 """
 
 print(execute_query(sql))

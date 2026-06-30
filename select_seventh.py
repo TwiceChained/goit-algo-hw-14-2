@@ -12,15 +12,16 @@ sql = """
 SELECT 
     gr.group_name,
     c.course_name,
-    ROUND(AVG(g.grade_value), 2) AS average_grade
+    s.student_name,
+    g.grade_value,
+    g.time_of_grade
 FROM groups AS gr
 JOIN students AS s ON s.group_id = gr.id
-JOIN grades AS g ON s.id = g.student_id
-JOIN courses AS c ON c.id = g.course_id
-WHERE c.id = 2
-GROUP BY gr.id, gr.group_name, c.id, c.course_name
-ORDER BY average_grade DESC
-
+JOIN grades AS g ON g.student_id = s.id
+JOIN courses AS c ON g.course_id = c.id
+WHERE gr.id = 1
+  AND c.id = 2
+ORDER BY s.student_name, g.time_of_grade;
 """
 
 print(execute_query(sql))

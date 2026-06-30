@@ -1,110 +1,127 @@
-from datetime import datetime
 import faker
-from random import randint, choice
+from random import randint
 import sqlite3
 
-NUMBER_COMPANIES = 3
-NUMBER_EMPLOYESS = 30
-NUMBER_POST = 5
+NUMBER_STUDENTS = 40
+NUMBER_TEACHERS = 4
+NUMBER_GROUPS = 3
+NUMBER_COURSES = 5
 
 
-def generate_fake_data(number_companies, number_employees, number_post) -> tuple():
-    fake_companies = []  # тут зберігатимемо компанії
-    fake_employees = []  # тут зберігатимемо співробітників
-    fake_posts = []  # тут зберігатимемо посади
-    '''Візьмемо три компанії з faker і помістимо їх у потрібну змінну'''
+def generate_fake_data(number_students, number_teachers, number_groups, number_courses) -> tuple:
+    fake_students = []  # тут зберігатимемо студентів
+    fake_teachers = []  # тут зберігатимемо вчителів
+    fake_groups = []  # тут зберігатимемо групи
+    fake_courses = [
+    "Mathematics",
+    "Physics",
+    "History",
+    "Geography",
+    "Chemistry",
+    "English",
+    "Computer Science",
+    "Biology",
+    ]  # тут зберігатимемо предмети
+
+    '''Створюємо об'єкт Faker для генерації випадкових даних'''
     fake_data = faker.Faker()
 
-    # Створимо набір компаній у кількості number_companies
-    for _ in range(number_companies):
-        fake_companies.append(fake_data.company())
+    # Створимо набір студентів у кількості number_students
+    for _ in range(number_students):
+        fake_students.append(fake_data.unique.name())
 
-    # Згенеруємо тепер number_employees кількість співробітників'''
-    for _ in range(number_employees):
-        fake_employees.append(fake_data.name())
+    # Згенеруємо тепер number_teachers кількість вчителів'''
+    for _ in range(number_teachers):
+        fake_teachers.append(fake_data.unique.name())
 
-    # Та number_post набір посад
-    for _ in range(number_post):
-        fake_posts.append(fake_data.job())
+    # Та number_groups набір груп
+    for i in range(1, number_groups + 1):
+        fake_groups.append(f"PZ-{100 + i}")
+    
+    # Та number_courses набір предметів
+    fake_courses = fake_courses[:number_courses]
 
-    return fake_companies, fake_employees, fake_posts
-
-
-def prepare_data(companies, employees, posts) -> tuple():
-    for_companies = []
-    # готуємо список кортежів назв компаній
-    for company in companies:
-        for_companies.append((company, ))
-
-    for_employees = []  # для таблиці employees
-
-    for emp in employees:
-        '''
-        Для записів у таблицю співробітників нам потрібно додати посаду та id компанії. Компаній у нас було за замовчуванням
-        NUMBER_COMPANIES, при створенні таблиці companies для поля id ми вказували INTEGER AUTOINCREMENT - тому кожен
-        запис отримуватиме послідовне число збільшене на 1, починаючи з 1. Тому компанію вибираємо випадково
-        у цьому діапазоні
-        '''
-        for_employees.append((emp, choice(posts), randint(1, NUMBER_COMPANIES)))
-
-    '''
-   Подібні операції виконаємо й у таблиці payments виплати зарплат. Приймемо, що виплата зарплати у всіх компаніях
-    виконувалася з 10 по 20 числа кожного місяця. Діапазон зарплат генеруватимемо від 1000 до 10000 у.о.
-    для кожного місяця, та кожного співробітника.
-    '''
-    for_payments = []
-
-    for month in range(1, 12 + 1):
-        # Виконуємо цикл за місяцями'''
-        payment_date = datetime(2021, month, randint(10, 20)).date().isoformat()
-        for emp in range(1, NUMBER_EMPLOYESS + 1):
-            # Виконуємо цикл за кількістю співробітників
-            for_payments.append((emp, payment_date, randint(1000, 10000)))
-
-    return for_companies, for_employees, for_payments
+    return fake_students, fake_teachers, fake_groups, fake_courses
 
 
-def insert_data_to_db(companies, employees, payments) -> None:
+def prepare_data(students, teachers, groups, courses) -> tuple:
+
+    for_groups = []
+    # готуємо список груп 
+    for group in groups:
+        for_groups.append((group, ))
+
+    for_teachers = []
+    # готуємо список кортежів імена вчителів
+    for teacher in teachers:
+        for_teachers.append((teacher, ))
+
+    for_students = []
+    # готуємо список кортежів імена студентів
+    for student in students:
+        for_students.append((student, randint(1, NUMBER_GROUPS)))
+
+    for_courses = []  
+    # готуємо список кортежів для таблиці courses
+    for course in courses:
+        for_courses.append((course, randint(1, NUMBER_TEACHERS)))
+
+    
+    fake_data = faker.Faker()
+
+    for_grades = []  
+    # готуємо список кортежів для таблиці grades
+    for student_id in range(1, NUMBER_STUDENTS + 1):
+        for _ in range(randint(10, 20)):
+            course_id = randint(1, NUMBER_COURSES)
+            grade_value = randint(1, 12)
+            time_of_grade = fake_data.date_between(start_date="-1y", end_date="today")
+
+            for_grades.append((student_id, course_id, grade_value, time_of_grade))
+
+
+    return for_groups, for_students, for_teachers, for_courses, for_grades
+
+
+
+def insert_data_to_db(groups, students, teachers, courses, grades) -> None:
     # Створимо з'єднання з нашою БД та отримаємо об'єкт курсору для маніпуляцій з даними
 
-    with sqlite3.connect('salary.db') as con:
+    with sqlite3.connect('university.db') as con:
 
         cur = con.cursor()
 
-        '''Заповнюємо таблицю компаній. І створюємо скрипт для вставлення, де змінні, які вставлятимемо, відзначимо
-        знаком заповнювача (?) '''
-
-        sql_to_companies = """INSERT INTO companies(company_name)
+   
+        sql_to_groups = """INSERT INTO groups(group_name)
                                VALUES (?)"""
+        cur.executemany(sql_to_groups, groups)
 
-        '''Для вставлення відразу всіх даних скористаємося методом executemany курсора. Першим параметром буде текст
-        скрипта, а другим - дані (список кортежів).'''
 
-        cur.executemany(sql_to_companies, companies)
+        sql_to_students = """INSERT INTO students(student_name, group_id)
+                               VALUES (?, ?)"""
+        cur.executemany(sql_to_students, students)
 
-        # Далі вставляємо дані про співробітників. Напишемо для нього скрипт і вкажемо змінні
 
-        sql_to_employees = """INSERT INTO employees(employee, post, company_id)
-                               VALUES (?, ?, ?)"""
+        sql_to_teachers = """INSERT INTO teachers(teacher_name)
+                               VALUES (?)"""
+        cur.executemany(sql_to_teachers, teachers)
 
-        # Дані були підготовлені заздалегідь, тому просто передаємо їх у функцію
 
-        cur.executemany(sql_to_employees, employees)
+        sql_to_courses = """INSERT INTO courses(course_name, teacher_id)
+                               VALUES (?, ?)"""
+        cur.executemany(sql_to_courses, courses)
 
-        # Останньою заповнюємо таблицю із зарплатами
 
-        sql_to_payments = """INSERT INTO payments(employee_id, date_of, total)
-                              VALUES (?, ?, ?)"""
-
-        # Вставляємо дані про зарплати
-
-        cur.executemany(sql_to_payments, payments)
+        sql_to_grades = """INSERT INTO grades(student_id, course_id, grade_value, time_of_grade)
+                              VALUES (?, ?, ?, ?)"""
+        cur.executemany(sql_to_grades, grades)
 
         # Фіксуємо наші зміни в БД
-
         con.commit()
 
 
 if __name__ == "__main__":
-    companies, employees, posts = prepare_data(*generate_fake_data(NUMBER_COMPANIES, NUMBER_EMPLOYESS, NUMBER_POST))
-    insert_data_to_db(companies, employees, posts)
+    groups, students, teachers, courses, grades = prepare_data(*generate_fake_data(NUMBER_STUDENTS, NUMBER_TEACHERS, NUMBER_GROUPS, NUMBER_COURSES))
+
+    insert_data_to_db(groups, students, teachers, courses, grades)
+
